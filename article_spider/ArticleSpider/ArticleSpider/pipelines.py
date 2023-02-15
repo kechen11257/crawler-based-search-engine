@@ -102,6 +102,7 @@ class MysqlTwistedPipline(object):
     def __init__(self, dbpool):
         self.dbpool = dbpool
 
+    # 通过类方法，静态方法：from_settings读取mysql的配置，然后实例化
     @classmethod
     def from_settings(cls, settings):
         # 数据直接从setting里面读进去，所以需要在setting里面配置好
@@ -112,7 +113,7 @@ class MysqlTwistedPipline(object):
             user=settings["MYSQL_USER"],
             passwd=settings["MYSQL_PASSWORD"],
             charset='utf8',
-            #  cursorclass=MySQLdb.cursors.DictCursor,
+            # cursorclass=MySQLdb.cursors.DictCursor,
             cursorclass=DictCursor,
             use_unicode=True,
         )
@@ -128,15 +129,20 @@ class MysqlTwistedPipline(object):
     def do_insert(self, cursor, item):
         # 执行具体的插入
         # 根据不同的item 构建不同的sql语句并插入到mysql中
+
+        insert_sql, params = item.get_insert_sql()
+        cursor.execute(insert_sql, params)
+
+        ''' 把sql语句写到items.py对应的item里面
         insert_sql = """
                     insert into cnblogs_article(title, url, url_object_id, front_image_url, front_image_path,
                     diggcount, totalview, commentcount, tags, content, created_date)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) 
-                    ON DUPLICATE KEY UPDATE 
-                    title = VALUES(title), url = VALUES(url), url_object_id = VALUES(url_object_id), 
-                    front_image_url = VALUES(front_image_url), front_image_path = VALUES(front_image_path), 
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    ON DUPLICATE KEY UPDATE
+                    title = VALUES(title), url = VALUES(url), url_object_id = VALUES(url_object_id),
+                    front_image_url = VALUES(front_image_url), front_image_path = VALUES(front_image_path),
                     diggcount = VALUES(diggcount), totalview = VALUES(totalview), commentcount = VALUES(commentcount),
-                    tags = VALUES(tags), content = VALUES(content), created_date = VALUES(created_date), 
+                    tags = VALUES(tags), content = VALUES(content), created_date = VALUES(created_date),
                 """
         params = list()
         params.append(item.get("title", ""))
@@ -150,10 +156,10 @@ class MysqlTwistedPipline(object):
         params.append(item.get("commentcount", 0))
         params.append(item.get("tags", ""))
         params.append(item.get("content", ""))
-        params.append(item.get("created_date", "0000-00-00"))
 
         cursor.execute(insert_sql, tuple(params))
         self.conn.commit()
+        '''
 
     def handle_error(self, failure, item, spider):
         # 处理异步插入的异常
