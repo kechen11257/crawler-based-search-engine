@@ -9,7 +9,7 @@ import json
 # useful for handling different item types with a single interface
 from itemadapter import ItemAdapter
 from scrapy.pipelines.images import ImagesPipeline
-from scrapy.exporters import  JsonItemExporter
+from scrapy.exporters import JsonItemExporter
 import MySQLdb
 from twisted.enterprise import adbapi
 
@@ -17,6 +17,7 @@ from twisted.enterprise import adbapi
 class ArticlespiderPipeline:
     def process_item(self, item, spider):
         return item
+
 
 class ArticleImagePipeline(ImagesPipeline):
     # 实际上可以理解为图片下载过程中的拦截，拦截图片的信息
@@ -30,6 +31,7 @@ class ArticleImagePipeline(ImagesPipeline):
 
         return item
 
+
 class JsonWithEncodingPipeline(object):
     # 自定义Jason文件的导出, step1:打开文件，
     def __init__(self):
@@ -38,16 +40,17 @@ class JsonWithEncodingPipeline(object):
 
     def process_item(self, item, spider):
         # 将json转换为字符串，将item强制转换成一个dict, "\n": 每个数据之间就会有一个回车换行
-        lines = json.dumps(dict(item),ensure_ascii= False) + "\n"
+        lines = json.dumps(dict(item), ensure_ascii=False) + "\n"
         self.file.write(lines)
         return item
 
     # 文件的打开一定会对应一个文件的关闭,名称不要随便写
-    def spider_closed(self,spider):
+    def spider_closed(self, spider):
         self.file.close()
 
+
 class JsonExporterPipleline(object):
-    #调用scrapy提供的json export导出json文件
+    # 调用scrapy提供的json export导出json文件
     def __init__(self):
         self.file = open('articleexport.json', 'wb')
         self.exporter = JsonItemExporter(self.file, encoding="utf-8", ensure_ascii=False)
@@ -61,11 +64,13 @@ class JsonExporterPipleline(object):
         self.exporter.finish_exporting()
         self.file.close()
 
+
 class MysqlPipeline(object):
-    #采用同步的机制写入mysql
+    # 采用同步的机制写入mysql
     def __init__(self):
         # 参数：url，用户名，密码，数据库名称
-        self.conn = MySQLdb.connect('127.0.0.1', 'root', 'secure1234', 'article_spider', charset="utf8", use_unicode=True)
+        self.conn = MySQLdb.connect('127.0.0.1', 'root', 'secure1234', 'article_spider', charset="utf8",
+                                    use_unicode=True)
         # 规定需要一个cursor
         self.cursor = self.conn.cursor()
 
@@ -76,21 +81,22 @@ class MysqlPipeline(object):
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) ON DUPLICATE KEY UPDATE diggcount = VALUES(diggcount),
         """
         params = list()
-        params.append(item.get("title",""))
-        params.append(item.get("url",""))
-        params.append(item.get("url_object_id",""))
-        front_image = ",".join(item.get("front_image_url",[]))
+        params.append(item.get("title", ""))
+        params.append(item.get("url", ""))
+        params.append(item.get("url_object_id", ""))
+        front_image = ",".join(item.get("front_image_url", []))
         params.append(front_image)
-        params.append(item.get("front_image_path",""))
-        params.append(item.get("diggcount",0))
-        params.append(item.get("totalview",0))
-        params.append(item.get("commentcount",0))
-        params.append(item.get("tags",""))
-        params.append(item.get("content",""))
-        params.append(item.get("created_date","1970-07-01"))
-        self.cursor.execute(insert_sql,tuple(params))
+        params.append(item.get("front_image_path", ""))
+        params.append(item.get("diggcount", 0))
+        params.append(item.get("totalview", 0))
+        params.append(item.get("commentcount", 0))
+        params.append(item.get("tags", ""))
+        params.append(item.get("content", ""))
+        params.append(item.get("created_date", "1970-07-01"))
+        self.cursor.execute(insert_sql, tuple(params))
         self.conn.commit()
         return item
+
 
 class MysqlTwistedPipline(object):
     def __init__(self, dbpool):
@@ -101,13 +107,13 @@ class MysqlTwistedPipline(object):
         # 数据直接从setting里面读进去，所以需要在setting里面配置好
         from MySQLdb.cursors import DictCursor
         dbparms = dict(
-            host = settings["MYSQL_HOST"],
-            db = settings["MYSQL_DBNAME"],
-            user = settings["MYSQL_USER"],
-            passwd = settings["MYSQL_PASSWORD"],
+            host=settings["MYSQL_HOST"],
+            db=settings["MYSQL_DBNAME"],
+            user=settings["MYSQL_USER"],
+            passwd=settings["MYSQL_PASSWORD"],
             charset='utf8',
-           #  cursorclass=MySQLdb.cursors.DictCursor,
-            cursorclass= DictCursor,
+            #  cursorclass=MySQLdb.cursors.DictCursor,
+            cursorclass=DictCursor,
             use_unicode=True,
         )
         dbpool = adbapi.ConnectionPool("MySQLdb", **dbparms)
@@ -115,13 +121,13 @@ class MysqlTwistedPipline(object):
         return cls(dbpool)
 
     def process_item(self, item, spider):
-        #使用twisted将mysql插入变成异步执行
+        # 使用twisted将mysql插入变成异步执行
         query = self.dbpool.runInteraction(self.do_insert, item)
-        query.addErrback(self.handle_error, item, spider) #处理异常
+        query.addErrback(self.handle_error, item, spider)  # 处理异常
 
     def do_insert(self, cursor, item):
-        #执行具体的插入
-        #根据不同的item 构建不同的sql语句并插入到mysql中
+        # 执行具体的插入
+        # 根据不同的item 构建不同的sql语句并插入到mysql中
         insert_sql = """
                     insert into cnblogs_article(title, url, url_object_id, front_image_url, front_image_path,
                     diggcount, totalview, commentcount, tags, content, created_date)
@@ -150,9 +156,5 @@ class MysqlTwistedPipline(object):
         self.conn.commit()
 
     def handle_error(self, failure, item, spider):
-        #处理异步插入的异常
-        print (failure)
-
-
-
-
+        # 处理异步插入的异常
+        print(failure)
