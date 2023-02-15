@@ -23,7 +23,7 @@ class CnblogsSpider(scrapy.Spider):
     }
 
     def start_requests(self):
-        #入口可以模拟登录拿到cookie,selenum控制浏览器会被一些
+        #入口可以模拟登录拿到cookie,selenium控制浏览器会被一些
         import undetected_chromedriver as uc
         driver = uc.Chrome()
         driver = webdriver.Chrome(ChromeDriverManager().install())

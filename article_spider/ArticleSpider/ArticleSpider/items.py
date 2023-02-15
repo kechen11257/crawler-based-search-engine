@@ -10,11 +10,11 @@ from scrapy.loader import ItemLoader
 from itemloaders.processors import TakeFirst, MapCompose, Join, Identity
 
 
-
 class ArticlespiderItem(scrapy.Item):
     # define the fields for your item here like:
     # name = scrapy.Field()
     pass
+
 
 """ 测试下面的items
 def add_kechen(value):
@@ -23,9 +23,11 @@ def add_test(value):
     return value + "-test"
 """
 
+
 class ArticleItemLoader(ItemLoader):
-    #自定义itemloader
+    # 自定义itemloader
     default_output_processor = TakeFirst()
+
 
 def date_convert(value):
     match_re = re.match(".*?(\d+.*)", value)
@@ -34,12 +36,14 @@ def date_convert(value):
     else:
         return "0000-00-00"
 
+
 def remove_comment_tags(value):
-    #去掉tag中提取的评论
+    # 去掉tag中提取的评论
     if value == "linux":  # linux只是一个举例
         return ""
     else:
         return value
+
 
 class CnblogsArticleItem(scrapy.Item):
     """
@@ -88,3 +92,29 @@ class CnblogsArticleItem(scrapy.Item):
     totalview = scrapy.Field()
 
 
+class ZhihuQuestionItem(scrapy.Item):
+    # 知乎的问题 item
+    zhihu_id = scrapy.Field()
+    topics = scrapy.Field()
+    url = scrapy.Field()
+    title = scrapy.Field()
+    content = scrapy.Field()
+    answer_num = scrapy.Field()
+    comments_num = scrapy.Field()
+    watch_user_num = scrapy.Field()
+    click_num = scrapy.Field()
+    crawl_time = scrapy.Field()
+
+
+class ZhihuAnswerItem(scrapy.Item):
+    #知乎的问题回答item
+    zhihu_id = scrapy.Field()
+    url = scrapy.Field()
+    question_id = scrapy.Field()
+    author_id = scrapy.Field()
+    content = scrapy.Field()
+    parise_num = scrapy.Field()
+    comments_num = scrapy.Field()
+    create_time = scrapy.Field()
+    update_time = scrapy.Field()
+    crawl_time = scrapy.Field()
