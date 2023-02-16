@@ -205,3 +205,64 @@ class ZhihuAnswerItem(scrapy.Item):
         )
 
         return insert_sql, params
+
+class LagouJobItemLoader(ItemLoader):
+    #自定义itemloader
+    default_output_processor = TakeFirst()
+
+class LagouJobItem(scrapy.Item):
+    #拉勾网职位信息
+    title = scrapy.Field()
+    url = scrapy.Field()
+    url_object_id = scrapy.Field()
+    salary = scrapy.Field()
+    job_city = scrapy.Field(
+        input_processor=MapCompose(remove_splash),
+    )
+    work_years = scrapy.Field(
+        input_processor = MapCompose(remove_splash),
+    )
+    degree_need = scrapy.Field(
+        input_processor = MapCompose(remove_splash),
+    )
+    job_type = scrapy.Field()
+    publish_time = scrapy.Field()
+    job_advantage = scrapy.Field()
+    job_desc = scrapy.Field()
+    job_addr = scrapy.Field(
+        input_processor=MapCompose(remove_tags, handle_jobaddr),
+    )
+    company_name = scrapy.Field()
+    company_url = scrapy.Field()
+    tags = scrapy.Field(
+        input_processor = Join(",")
+    )
+    crawl_time = scrapy.Field()
+
+    def get_insert_sql(self):
+        insert_sql = """
+            insert into lagou_job(title, url, url_object_id, salary, job_city, work_years, degree_need,
+            job_type, publish_time, job_advantage, job_desc, job_addr, company_name, company_url,
+            tags, crawl_time) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            ON DUPLICATE KEY UPDATE salary=VALUES(salary), job_desc=VALUES(job_desc)
+        """
+        params = (
+            self.get("title", ""),
+            self.get("url", ""),
+            self.get("url_object_id", ""),
+            self.get("salary", ""),
+            self.get("job_city", ""),
+            self.get("work_years", ""),
+            self.get("degree_need", ""),
+            self.get("job_type", ""),
+            self.get("publish_time", "0000-00-00"),
+            self.get("job_advantage", ""),
+            self.get("job_desc", ""),
+            self.get("job_addr", ""),
+            self.get("company_name", ""),
+            self.get("company_url", ""),
+            self.get("job_addr", ""),
+            self["crawl_time"].strftime(SQL_DATETIME_FORMAT),
+        )
+
+        return insert_sql, params
