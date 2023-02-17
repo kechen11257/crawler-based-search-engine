@@ -69,7 +69,7 @@ class CnblogsSpider(scrapy.Spider):
         next_url = response.xpath("//a[contains(text(),'Next >')]/@href").extract_first("")
         yield Request(url=parse.urljoin(response.url, next_url), callback=self.parse)
         """
-        """
+
         # 为了调试简单，先把它注释掉
         next_url = response.css("div.pager a:last-child::text").extract_first("")
         # next_url = response.xpath("//a[contains(text(),'Next >')]/@href").extract_first("")
@@ -77,7 +77,7 @@ class CnblogsSpider(scrapy.Spider):
             next_url = response.css("div.pager a:last-child::attr(href)").extract_first("")
             # yield一个Request交给scrapy进行下载，下载完成后交给parse继续跟进
             yield Request(url=parse.urljoin(response.url, next_url), callback=self.parse)
-        """
+
 
     """ parse_detail版本1/3 采用同步的库
     def parse_detail(self, response):
