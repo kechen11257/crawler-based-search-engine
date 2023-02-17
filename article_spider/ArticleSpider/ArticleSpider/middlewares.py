@@ -9,6 +9,8 @@ from fake_useragent import UserAgent
 # useful for handling different item types with a single interface
 from itemadapter import is_item, ItemAdapter
 
+from ArticleSpider.tools.crawl_xici_ip import GetIP
+
 
 class ArticlespiderSpiderMiddleware:
     # Not all methods need to be defined. If a method is not defined,
@@ -105,25 +107,44 @@ class ArticlespiderDownloaderMiddleware:
 
 class RandomUserAgentMiddlware(object):
     #随机更换user-agent
+    # 相当于java里面的构造函数
     def __init__(self, crawler):
         super(RandomUserAgentMiddlware, self).__init__()
+        # from fake_useragent import UserAgent
         self.ua = UserAgent()
         # If the RANDOM_UA_TYPE setting is not found in the crawler settings, it defaults to the string "random".
         self.ua_type = crawler.settings.get("RANDOM_UA_TYPE", "random")
 
     @classmethod
     # 类似于之前的from_setting，可以调用setting里面的值
+    # to instantiate the class
+    # It returns an instance of the class, passing the crawler object as a parameter.
     def from_crawler(cls, crawler):
         return cls(crawler)
 
+    # is called for each request that is sent by the spider.
+    # It randomly selects a user agent and adds it to the request headers.
     def process_request(self, request, spider):
         def get_ua():
+            # returns a random user agent based on the value of ua_type
             return getattr(self.ua, self.ua_type)
         # request.headers.setdefault('User-Agent', self.ua.random)
+        #  randomly selects a user agent and adds it to the request headers
         request.headers.setdefault('User-Agent', get_ua())
 
-
-
+class RandomProxyMiddleware(object):
+    #动态设置ip代理
+    def process_request(self, request, spider):
+        # instantiates a GetIP object
+        get_ip = GetIP()
+        #  the meta attribute is a dictionary that is used to pass data between Scrapy components,
+        #  such as between spider callbacks, between middleware components and downloader, etc.
+        request.meta["proxy"] = get_ip.get_random_ip()
+  
+# print (crawl_ips())
+if __name__ == "__main__":
+    get_ip = GetIP()
+    get_ip.get_random_ip()
 
 
 
