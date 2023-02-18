@@ -102,11 +102,21 @@ class ArticlespiderDownloaderMiddleware:
         # - return a Request object: stops process_exception() chain
         pass
 
+    def process_start_requests(self, start_requests, spider):
+        # Called with the start requests of the spider, and works
+        # similarly to the process_spider_output() method, except
+        # that it doesn’t have a response associated.
+
+        # Must return only requests (not items).
+        for r in start_requests:
+            yield r
+
     def spider_opened(self, spider):
         spider.logger.info("Spider opened: %s" % spider.name)
 
+
 class RandomUserAgentMiddlware(object):
-    #随机更换user-agent
+    # 随机更换user-agent
     # 相当于java里面的构造函数
     def __init__(self, crawler):
         super(RandomUserAgentMiddlware, self).__init__()
@@ -128,24 +138,47 @@ class RandomUserAgentMiddlware(object):
         def get_ua():
             # returns a random user agent based on the value of ua_type
             return getattr(self.ua, self.ua_type)
+
         # request.headers.setdefault('User-Agent', self.ua.random)
         #  randomly selects a user agent and adds it to the request headers
         request.headers.setdefault('User-Agent', get_ua())
 
+
 class RandomProxyMiddleware(object):
-    #动态设置ip代理
+    # 动态设置ip代理
     def process_request(self, request, spider):
         # instantiates a GetIP object
         get_ip = GetIP()
         #  the meta attribute is a dictionary that is used to pass data between Scrapy components,
         #  such as between spider callbacks, between middleware components and downloader, etc.
         request.meta["proxy"] = get_ip.get_random_ip()
-  
+
+
+from scrapy.http import HtmlResponse
+
+# 同步方法，不推荐
+class JSPageMiddleware(object):
+    # 通过chrome请求动态网页
+    def process_request(self, request, spider):
+        if spider.name == "lagou":
+            # browser = webdriver.Chrome(executable_path="D:/Temp/chromedriver.exe")
+            spider.browser.get(request.url)
+            import time
+            time.sleep(3)
+            print("访问:{0}".format(request.url))
+
+            callback = request.callback
+            return HtmlResponse(url=spider.browser.current_url, body=spider.browser.page_source, encoding="utf-8",
+                                request=request)
+
+# from pyvirtualdisplay import Display
+# display = Display(visible=0, size=(800, 600))
+# display.start()
+#
+# browser = webdriver.Chrome()
+# browser.get()
+
 # print (crawl_ips())
 if __name__ == "__main__":
     get_ip = GetIP()
     get_ip.get_random_ip()
-
-
-
-
