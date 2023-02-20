@@ -1,4 +1,6 @@
 import importlib
+
+import scrapy
 import six
 
 from scrapy.utils.misc import load_object
@@ -150,6 +152,16 @@ class Scheduler(object):
         self.queue.clear()
 
     def enqueue_request(self, request):
+        import json
+        import redis
+        rd = redis.Redis("127.0.0.1", decode_responses=True)
+        # 先检查指定的redis队列中是否有url
+        list_name = "cnblogs:start_urls"
+        while rd.llen(list_name):
+            data = json.loads(rd.lpop(list_name))
+            req = scrapy.Request(url=data[0], dont_filter=False,callback=self.spider.parse_detail, priority=data[1])
+            self.queue.push(request)
+
         if not request.dont_filter and self.df.request_seen(request):
             self.df.log(request, self.spider)
             return False
